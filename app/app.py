@@ -15,7 +15,6 @@ stores = [
 ]
 
 
-
 # end point
 @app.route('/')
 def hello_world():

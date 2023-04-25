@@ -1,24 +1,18 @@
 from flask import Flask,request
+from db import items,stores
+import uuid
 
 app = Flask(__name__)
-
-stores = [
-    {
-        "name": "My store",
-        "items": [
-            {
-                "name": "Chair",
-                "price": 15.99
-            }    
-        ]
-    }
-]
 
 
 # end point
 @app.route('/')
-def hello_world():
+def index_page():
     return "Hello Docker xiaomi haha!"
+
+#####################################################
+# GET
+
 
 # a single GET end points at /store
 @app.get("/store") # http://127.0.0.1:5000/store
@@ -28,48 +22,15 @@ def get_stores():
     Returns:
         _type_: _description_
     """
-    return {"stores":stores}
+    return {"stores": list(stores.values())}
+
+@app.get("/item") 
+def get_all_items():
+    return {"items": list(items.values())}
 
 
-@app.post("/store")
-def create_store():
-    # get json from client
-    request_data = request.get_json()
-    # add and append
-    new_store = {"name": request_data["name"], \
-                 "items":[]}
-    
-    stores.append(new_store)
-    
-    return new_store, 201
-
-
-@app.post("/store/<string:name>/item")
-def create_item(name):
-    """
-    add item for a specific stored "name"
-    Args:
-        name (string): the name of the store
-
-    Returns:
-        _type_: _description_
-    """
-    # grab the inc json
-    request_data = request.get_json()
-    # find match within store O(N) (better with dict for stores?)
-    for store in stores:
-        if store["name"] == name:
-            # if match, grab, append and return it
-            new_item = {"name": request_data["name"],
-                        "price": request_data["price"]}
-            store["items"].append(new_item)
-            return new_item, 201
-        
-    return {"message": "Store not found!"}, 404
-        
-
-@app.get("/store/<string:name>")
-def get_store(name):
+@app.get("/store/<string:store_id>")
+def get_store(store_id):
     """
     get a specific store infomation
     Args:
@@ -78,28 +39,47 @@ def get_store(name):
     Returns:
         _type_: _description_
     """
-    for store in stores:
-        if store["name"] == name:
-            return store
+    try:
+        return stores[store_id]
+    except KeyError:
+        return {"message": "Store not found"}, 404
+
+
+
+@app.get("/item/<string:item_id>")
+def get_item(item_id):
+    try:
+        return items[item_id]
+    except KeyError:
+        return {"message": "Item not found"}, 404
+
+
+#####################################################
+# Post
+
+@app.post("/store")
+def create_store():
+    # get json from client
+    store_data = request.get_json()
+    store_id = uuid.uuid4().hex
+    # standard for merge dict
+    store = {**store_data, "id": store_id}
+    stores[store_id] = store
     
-    return {"message": "Store not found"}, 404
+    return store, 201
 
 
-
-@app.get("/store/<string:name>/item")
-def get_item_in_stores(name):
-    """
-    get items in a specific store
-    Args:
-        name (_type_): name of the store
-
-    Returns:
-        _type_: _description_
-    """
-    for store in stores:
-        if store["name"] == name:
-            # good habit to return as a json (prevent breaking)
-            return {"items": store["items"]}
+@app.post("/item")
+def create_item():
+    # grab the inc json
+    item_data = request.get_json()
     
-    return {"message": "Store not found"}, 404
+    if item_data["store_id"] not in stores:
+        return {"message": "Store not found"},404
+    
+    item_id = uuid.uuid4().hex
+    item = {**item_data,"id":item_id}
+    items[item_id] = item
+    return item,201
 
+        

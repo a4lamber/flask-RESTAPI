@@ -1,10 +1,16 @@
 FROM python:3.11.3-slim-buster  
+EXPOSE 5000
 
-COPY requirements.txt /app/requirements.txt
 
-RUN pip3 install -r /app/requirements.txt
+WORKDIR /api
 
+# copy requirements.txt to workdir
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
+
+# copy source code and move inside
 COPY . .
+WORKDIR /api/app
 
-WORKDIR /app
-CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0"]
+
+CMD ["flask", "run", "--host=0.0.0.0"]
